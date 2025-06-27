@@ -1,0 +1,2048 @@
+{
+  "name": "newletter_generation",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Retrive Data",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Date",
+              "fieldType": "date",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Previous Newsletter Content",
+              "placeholder": "Copy and paste the markdown content of the previous newsletter here. This is used to avoid duplicate coverage of stories."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        5920,
+        1860
+      ],
+      "id": "880bbc18-470b-4cc7-a6ad-7445e9288da7",
+      "name": "form_trigger",
+      "webhookId": "2a7def93-8055-4f04-8a5c-a8786d01a2fd"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cb1ba2cf-90d6-4f99-bdf0-96bf8c9ce6c6",
+              "leftValue": "={{ $json.Key }}",
+              "rightValue": ".md",
+              "operator": {
+                "type": "string",
+                "operation": "endsWith"
+              }
+            },
+            {
+              "id": "f031d067-6edb-4938-b67d-0b55966b6fb7",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        6500,
+        1860
+      ],
+      "id": "bab3ebe6-90ef-4c30-a96f-c76fb1cfe328",
+      "name": "filter_only_markdown"
+    },
+    {
+      "parameters": {
+        "content": "## 1. Retrieve Markdown Content\n",
+        "height": 260,
+        "width": 2580
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        6140,
+        1800
+      ],
+      "typeVersion": 1,
+      "id": "9cabbac4-5a30-4054-ac57-3510d36c723f",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Pick Top Stories",
+        "height": 1300,
+        "width": 1900,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        6140,
+        2080
+      ],
+      "typeVersion": 1,
+      "id": "dd35ce24-134e-463f-af3a-4fff232747bb",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f986e5a7-3723-4a90-a61c-3d3008f0b022",
+              "leftValue": "={{ $json.type }}",
+              "rightValue": "newsletter",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        7120,
+        1860
+      ],
+      "id": "dd664ada-bf53-4829-acf3-70a525255d0f",
+      "name": "exclude_newsletters"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('stories_prompt').item.json.select_top_stories_prompt }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an AI assistant specialized in reading raw text about AI-related news, trends, and breakthroughs. Your objective is to determine which stories should be included in our AI Tools newsletter, based on their relevance, impact, and interest to a tech-savvy audience. You are also an expert at crafting subject lines for newsletter emails that leads to great open rates and keeps our readers interested."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        6360,
+        2620
+      ],
+      "id": "637c1ef7-4f35-4406-b4e6-362a69523e71",
+      "name": "pick_top_stories",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"top_selected_stories_chain_of_thought\": {\n      \"type\": \"string\",\n      \"description\": \"A detailed chain of thought explaining why you selected the top stories for our audience to feature in this newsletter. You must enumerate EVERY story you are considering and expand on why the story was either included or rejected from your final selections. It is critical that you provide reasoning on why stories are both included AND excluded. This should also include detailed reasoning why the other stories were excluded. You should detail at least 1-2 sentences on why each story was selected OR excluded. Each story analysis should include a CSV of the source identifiers that were analyzed and were read when making this decision. You must think deeply about the top story analysis and reference the provided guidelines for story importance. This will be shared in slack so please format this in slack's format so that it is easy for a slack user to read. You MUST use numbered lists that reference the source where it came from. Avoid regular bullets and use numbered lists. IF feedback was provided in the context of editing the top stories, include how you considered that feedback in your changes. It will be considered a failed task if you DO NOT providethe references to sources where stories came from and the detailed reasoning why that story was either included or excluded. You are expected to list out this reasoning and source material deatils for EVERY SINGLE STORY provided and evaluated. For each story in the (including the stories that were NOT selected), you are required to output the identifiers you evaluated for the story along with a detailed reason for why the story was included or excluded. You are NOT allowed to skip these details in your output for any story. In your output please include a section for the stories that were CLOSE to being selected but ultimately were not selected due to othedr stories being a better fit (format this as a bulleted list along with a summary of each story close to being selected along with reasoning why). Again, you are reminded that you MUST list out the content identifiers and provide a detailed explaination for all stories and provide reasoning on the selection choice. It is absolutely critical and required for you to include each of the content identifiers grouped together under each story. You may not skip this in your output.\"\n    },\n    \"top_selected_stories\": {\n      \"type\": \"array\",\n      \"description\": \"A list of four chosen stories (including the top/main story).\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"title\": {\n            \"type\": \"string\",\n            \"description\": \"A concise, catchy headline for this story section that follows the style of 'Axios' or 'The Rundown' segment headings. This MUST be compelling and interesting to our readers and target audience of AI enthusiasts so they are interested in reading the section about this story.\"\n          },\n          \"summary\": {\n            \"type\": \"string\",\n            \"description\": \"A brief summary or description of this story section. Please also include notes on what we can further write about / expand on for this story in our AI newsletter.\"\n          },\n          \"identifiers\": {\n            \"type\": \"array\",\n            \"description\": \"Array of relevant content piece IDs for this story.\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          },\n          \"external_source_links\": {\n            \"type\": \"array\",\n            \"description\": \"The top-level sources (press releases, official blog posts, etc.) drawn directly from the provided text. Only include links if they appear in the raw content provided or in the external-source-urls provided.\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          }\n        },\n        \"required\": [\n          \"title\",\n          \"summary\",\n          \"reason_for_selecting\",\n          \"identifiers\",\n          \"external_source_links\"\n        ]\n      }\n    }\n  },\n  \"required\": [\n    \"top_selected_stories_chain_of_thought\",\n    \"top_selected_stories\"\n  ]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        6520,
+        3040
+      ],
+      "id": "87900b2f-03ce-468a-9c40-295801ac4f24",
+      "name": "top_stories_parser"
+    },
+    {
+      "parameters": {
+        "content": "## Iterate Over & Write Each Selected Story\n\n1. Resolve identifier for the story\n2. Load up 1-N story references\n3. Pass in writing guidelines\n4. Write headline and section",
+        "height": 1300,
+        "width": 4980,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        6140,
+        3400
+      ],
+      "typeVersion": 1,
+      "id": "959084ab-9973-4bda-b455-1c9fc59c4edf",
+      "name": "Sticky Note3",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "top_selected_stories",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        6380,
+        3920
+      ],
+      "id": "ebb00f7e-e65b-4c45-afd7-15305eee6a04",
+      "name": "split_stories"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        6640,
+        3920
+      ],
+      "id": "8db88423-9974-46c5-bc16-b6925b1b4b10",
+      "name": "iterate_stories"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "current_story.identifiers",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        7260,
+        4040
+      ],
+      "id": "ce112c40-e8fc-461d-80d7-9540dd634bc9",
+      "name": "split_content_ids"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c677aa22-37e5-4d3b-9b53-409fb3c74b81",
+              "leftValue": "={{ $node[\"set_current_segment\"].json.current_story.external_source_links }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "6f3cee68-49b0-4cb6-871e-4cb12a306b06",
+              "leftValue": "={{ $node[\"set_current_segment\"].json.current_story.external_source_links }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        8640,
+        4040
+      ],
+      "id": "87324e2a-4ac2-42c2-a8c9-523262acdbcc",
+      "name": "check_external_urls"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ba33265f-73f6-4561-9cf0-dcb2f0b52a78",
+              "name": "story_sections",
+              "value": "={{ $node[\"iterate_stories\"].json.story_segment.newsletter_section_content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        10480,
+        3560
+      ],
+      "id": "766bc984-67b8-42d9-8747-73b1e6d0c1d2",
+      "name": "set_story_segments"
+    },
+    {
+      "parameters": {
+        "bucketName": "mydataingestion",
+        "fileKey": "={{ $node[\"split_content_ids\"].json['current_story.identifiers'] }}"
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        7700,
+        4040
+      ],
+      "id": "2c2f1883-f6a7-463c-ab4a-0c5791eb52d6",
+      "name": "download_segment_content",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "s3": {
+          "id": "VLtGHFPRKEhOkWHv",
+          "name": "wasabi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "=data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        7920,
+        4040
+      ],
+      "id": "3e85214c-5d45-4c28-a6b2-a1b84e31bc47",
+      "name": "get_segment_content_text"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d2054552-ac25-41e0-9f09-faa9cea840e6",
+              "name": "content_item",
+              "value": "=<{{ $node[\"split_content_ids\"].json['current_story.identifiers'] }}>\n---\nidentifier: {{ $node[\"split_content_ids\"].json['current_story.identifiers'] }}\nfriendlyType: {{ $('getmetadata1').item.json.type }}\nsourceName: {{ $('getmetadata1').item.json['source-name'] }}\nauthors: {{ $('getmetadata1').item.json.authors }}\nexternalSourceUrls: {{ $('getmetadata1').item.json['external-source-urls'] }}\nimageUrls: {{ $('getmetadata1').item.json['image-urls'] }}\n---\n\n{{ $('get_segment_content_text').item.json.data }}\n</{{ $node[\"split_content_ids\"].json['current_story.identifiers'] }}>",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        8160,
+        4040
+      ],
+      "id": "702f7af8-f8c5-42e3-b41d-6c440c83196a",
+      "name": "prepare_segment_content_item"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "content_item"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        8400,
+        4040
+      ],
+      "id": "ea3d502f-5115-4599-974f-cbef445e905b",
+      "name": "aggregate_segment_text_content"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "81a924a0-5bab-423a-a41a-4fe7a0345f68",
+              "name": "segment_external_source_links",
+              "value": "={{ $node[\"set_current_segment\"].json.current_story.external_source_links }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        8880,
+        3880
+      ],
+      "id": "eb510a20-25b4-448b-9db5-28312e49bbb2",
+      "name": "set_segment_external_source_links"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "=segment_external_source_links",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        9100,
+        3880
+      ],
+      "id": "ff91c2cc-ecf6-4727-a570-b03e2901956e",
+      "name": "split_segment_external_source_urls"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "00bUXO1kKVpTWM7c",
+          "mode": "list",
+          "cachedResultName": "scrape_url"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "url": "={{ $json.segment_external_source_links }}"
+          },
+          "matchingColumns": [
+            "url"
+          ],
+          "schema": [
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        9320,
+        3880
+      ],
+      "id": "9f7201bf-ac03-46fe-8ca0-01de1c29d568",
+      "name": "scrape_segment_external_source_url",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        9760,
+        3880
+      ],
+      "id": "e41b29a9-fcad-41c9-8df7-814fc5f5eb96",
+      "name": "aggregate_segment_external_source_content",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ecd02ccb-0790-44ab-8bb0-246881e35a20",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        9540,
+        3880
+      ],
+      "id": "0947b589-f7a2-446b-b4f1-f88fbaf03540",
+      "name": "filter_segment_external_source_errors",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## Task and Purpose\n\nCreate a single newsletter section focused on **STT and TTS AI developments, tools, and applications** that help professionals automate tasks, boost productivity, and stay on the cutting edge. You will be given details of a single section to write about and supporting source material. Use this to write this newsletter section.\n\nToday's date for the newsletter is *{{ new Date(new Date($('form_trigger').item.json.Date).getTime() + (12 * 60 * 60 * 1000)).format(\"yyyy-MM-dd\", \"America/Chicago\") }}*.\n\n### Audience\n\n- **Tech-forward readers**—developers, entrepreneurs, STT and TTS AI enthusiasts, and early adopters.\n- Those looking for **new STT and TTS AI trends**, developments, and **real-world use cases** that can make their work more efficient.\n\n### Style Inspiration\n\n- **Axios-like** and **Rundown** approach with **short, punchy paragraphs**, clear headers, bullet points, and a **“Why it matters”** or **“Bottom line”** section.\n- **Enthusiastic, optimistic, forward-looking** voice that highlights STT and TTS AI’s future-shaping potential.\n\n### Additional Writing Guidelines\n\n- Place verbs directly after helping verbs like \"makes,\" \"allows,\" \"enables\"\n- Emphasize user actions rather than abstract processes\n- Use clear subject-verb-object structure whenever possible\n- Keep sentences concise and purposeful\n- Avoid unnecessary nominalization (turning verbs into nouns) and keep the language direct and dynamic.\n- Avoid technical jargon. Your writing should be easy to understand for non-technical readers.\n\nPlease use active verb constructions rather than noun phrases. For example:\n- WEAK: \"Intuitive interface that makes voiceover creation accessible to non-technical users\"\n- STRONG: \"Intuitive interface that makes creating voiceovers accessible to non-technical users\"\n\n### Section Struture\n\nFollow this structure when writing your newsletter segment:\n\n1. **The Recap:** (should be bolded)\n  - Provide a **quick summary and overview** of the topic.\n  - This should be a brief 1-2 sentences.\n  - Start this section with **The Recap:** followed by your 1-2 sentences.\n  - This is a good place to link to any annoucment or other external urls relevant to this content.\n\n2. **Unpacked:** (should be bolded)\n  - Expand on **additional details** and context around the story that provides our readers with value. This can be in the form of (but is not limited to) expanding on the important details of the story they would care about, connecting the story into the larger STT and TTS AI space and other recent developments, or take an approach that \"Axios\" and \"The Rundown STT and TTS AI\" newsletters take with their bullet points to help readers get the most useful information around he story in bullet point form. The goal here is to \"unpack\" the most useful details around the story in an easy to digest format for our readers. We are looking for added \"depth\" around this story.\n  - This should be formatted as a bulleted list where each bullet item is a single sentence that expands around the context of the story / source material.\n  - This should not be overly technical. It should be easy for an entry level STT and TTS AI enthusiast to understand. It must also be easy for someone new to STT and TTS AI who is looking to learn the basics to understand.\n  - You may ONLY write about information that is included in the provided source  materia, you may NOT make up or invent your own facts. The facts you output must exist on the provided sources materials and context.\n  - You should provide a total of 3 bullets. Each bullet you include MUST be very relevant to the story and provide the reader with necessary context. You must avoid adding bullets that are not useful to the reader. The number of bullets points to include is truly your choice. You should aim to \"unpack\" the story in 3 bullets.\n  - You must use the `-` character instead of a `*` for each bullet in this section.\n  - Use regular markdown bullet formatting for each of these bullets. Your output will be directly sent in an email to our readers so think carefully and make sure the formatting is correct. There MUST NOT be any extra spacing after the `-` character and the text content for this bullet, only the single space according to the markdown specification. Review this requirement carefully before you write your output.\n  - You may only include a maximum of 1 single link/hyperlink in each bullet you write. A link/hyperlink is not required, but you are allowed to include a maximum of 1 link so you must be sure the link you select is the best placement for it.\n  - You are NOT allowed to format links as bold in your output.\n  - You are allowed to **bold** a maximum of a single phrase (or single word) in the scope of each bullet. You may NOT bold multiple phrases withing the scope of a SINGLE bullet so pick the word or phrase that makes the most sense to bold if you choose to bold. It is truly optional to bold a word or phrase within the scope of a bullet. Don't 'force' bolding a word or phrase that doesn't make sense. The bolding should feel natural to the reader.\n\n3. **Bottom line:** (should be bolded)\n  - Offer a **short, final insight** into why this story matters or how it impacts the reader. This must be 2 sentences in length. Avoid repeating ideas or duplicating information withing this \"Bottom Line\" section.\n  - You must **AVOID** writing a phrase that include the word \"We're\" or \"We are\" in this \"Bottom Line\" section.\n  - You must avoid overly-flower language that is excessively descriptive. This sentences in this bottom line needs to still be easy to read while offering insight(s) to the reader. \n\n---\n### Tone and Voice\n\n1. **Optimistic and Enthusiastic**  \n   - Show excitement about STT and TTS AI’s potential in a **balanced, non-overbearing** way.  \n   - Demonstrate genuine curiosity—celebrate successes and **promising experiments**.\n\n2. **Clear, Direct, and Data-Driven**  \n   - Use bullet points and **bolded keywords** for critical stats and key points/details. Bolded values should be used to highlight important words of text so don't bold too much or else it will lose its meaning.\n   - Keep language **straightforward**—avoid deep academic jargon, but don’t oversimplify.\n\n3. **Conversational and Personable**  \n   - Use **friendly, casual style** with first- or second-person pronouns (“we,” “you”).  \n   - Engage the reader: “Here’s what caught our attention,” “We’re excited to see how this unfolds.”\n\n4. **Authoritative Without Being Overly Formal**  \n   - **Cite sources** and link to relevant external sources when possible.  \n   - Combine excitement with **credible facts** to maintain trust. Review the linking requirements to understand the correct way to cite.\n    - **Authoritative yet approachable**, focusing on credible facts and references. Always include a markdown link when you can tie back back a concept like a person, event, annoucment, social media post to what you are writing about. This is important.\n\n---\n### Word and Phrase Blacklist\n\nAvoid using these words and phrases in your output:\n\n- Smarts\n- Game changing\n- Revolutionize\n- sophisticated\n\n---\n## Formatting and Layout Tips\n\n1. **Short Paragraphs and Bullet Points**  \n  - Keep **1–2 sentences per paragraph** when not using bullets.  \n  - Use bullet points to **list features, stats, or steps** clearly.\n  - Bullet points must be in proper markdown format. Here's an example of a properly formatted markdown bullet (make note of the spacing). `- This is a proper bullet that will exist on its own line`\n\n2. **Visual Cues and Emphasis**  \n  - **Bold** key data points or important terms (e.g., **80%+ accuracy**, **multi-agent system**).  \n  - Use *italics* or _underlines_ sparingly for references, notable phrases, or quotes.\n\n3. **Format In Markdown**\n  - Format your output in markdown using best practices for headings, paragraphs, bulleted lists, bold text, and hyperlinks.\n  - You should use markdown formatting where the section heading is a the `#` heading level for the header of this segment.\n  - Pay close attention to your markdown formating to make sure it is valid and clean.\n\nPay close attention and ensure your output matches the provided JSON schema format. Make sure any special characters our correctly handled so that your output can be parsed. If you make any mistakes here and return output that does NOT match the provided, this task will be considered a complete failure and I will lose my car, my house, and my family.\n\n---\n### Additional Notes\n\nA main goal of our is to provide concise yet powerful insights, your publication can stand out as a **trusted source** for the latest in STT and TTS AI innovation.\n\nYou MUST also reference \"Additional Source Materials\" to get more context around the segment you are writing. This should be very helpful for adding commentary, making better summaries, extracting data points, and giving more context to the reader.\n\n---\n### Link and Hyperlinking Requirements\n\nIt is critical that you follow these requirements when inserting links into your output. Read through this carefully, reflect on it for 25 minutes, and double check your work to ensure you follow these requirements correctly.\n\n1.  **Strategic Linking for Validation & Context:** Embed hyperlinks purposefully.\n    * Link specific entities (companies, products, technologies) to their official source on first mention.\n    * Link data, statistics, claims, or direct quotes to their precise origin (e.g., study, press release, specific article/report section).\n    * Where appropriate (e.g., in concluding sections), consider linking to resources offering broader context or further exploration of the topic.\n\n2.  **Mandatory Verified Deep Links:** All hyperlinks MUST point to the *exact*, specific page, document, or section directly supporting the assertion being made. Before including *any* link:\n    * **Verify:** Confirm the destination directly and explicitly supports the specific information it's linked to.\n    * **Prioritize:** Use primary or the most authoritative sources available.\n    * **Deep Link:** Absolutely NO linking to generic homepages or main site sections (e.g., link to the specific *project page* or *announcement*, not just the company's top-level domain). An example of linking to a generic homepage would be `https://openai.com/`. Make sure you DO NOT DO THIS.\n    * **Omit if Uncertain:** If the precise, credible, and directly supporting URL cannot be confidently identified and verified, DO NOT include a link for that piece of information.\n\n3.  **Seamless Integration & Readability:** Weave links naturally into the narrative flow.\n    * **Anchor Text:** Use brief, relevant anchor text (typically 2-5 words) that accurately describes the link's destination or topic. Avoid overly long anchor text.\n    * **Density:** You MUST limit links to 1 (one) per paragraph or self-contained bullet point. If multiple sources are essential for a single point, prioritize the single most direct/authoritative one, or carefully distribute links across different sentences only if absolutely necessary for clarity and validation.\n\n4.  **Leverage Provided Source Materials:** Actively consult the `Current Segment Story Context` and `Additional Current Segment Source Materials` sections (if provided) to identify, verify, and select the most appropriate and accurate hyperlinks based on the available information.\n\n5. Verify link destinations - Before suggesting a link in your response, confirm the URL directly relates to the exact topic, product, or claim being discussed. You MUST NOT link to a web page that doesn't exist or a web page that would result in a HTTP 404 error when a user clicks on it. If you include a link that goes to a web page that does not exist or results in an error, it will result in us completely losing the trust of our readers. You are not allowed to make any mistakes here or insert links that are to web pages that don't exist on the internet. Think through this requirement carefully and deeply.\n\n6. Remember that links should be incorporated naturally into the text rather than appearing as separate references. The goal is to provide readers with a seamless way to verify information and explore topics further while maintaining the newsletter's readability. Avoid adding this contextual link to more than three (3) words at once — it should not feel super long. The hyperlink/contextual link should be on a few anchor words (maximum of 3 (three) words. Pay close attention to the anchor text you are placing the link on. It MUST be intentional and it must be the set of words that makes the most sense to place the link. Think deeply about where the link is getting placed on each sentence or bullet point for at least 25 minutes before creating your output. You MUST place this in the best possible spot with the best anchor text that is most relevant to the link destination.\n\n7. Multiple sources and links can be found below under the `Current Segment Story Context` and `Additional Current Segment Source Materials` headings. Please think deeply and review this context in order to place the best links. You must read all additional source materials and think on the best links to reference for 30 minutes before you decide to add them in. Links to evaluate and consider can be found by looking for the `url` value on the \"Additional Current Segment Source Materials\" content items. You can also look in the `external_source_links` array inside the JSON provided in \"Current Segment Story Context\".\n\n8. Prefer linking to credible sources and avoid linking to unknown websites or websites that have very poor reputations.\n\n9. You MUST ENSURE that the links you are including and inserting are exactly the same urls copied from the provided source urls. You may not change or modify these urls because the url is required to work. When including a URL it should be copied and pasted in. NOT URL MODIFICATION IS ALLOWED. Before inserting a link, you must load this URL from the internet to ensure it is still valid and can be seen when people click on it. YOU MUST INSERT AND PROVIDE CORRECT HYPERLINKS.\n\n10. You MUST avoid linking the same URL more than once in the scope of this newsletter section. You are allowed to use a source one so pick the spot this is the most contextually relevant.\n\n11. When writing about product annoucements, new releases, major updates, or other big annoucements, I would expect you to link back to the source material put out by the company. This is typically a blog post, Tweet / X post, a research paper, or another piece of content release by the company, entity, or person who created it. It is most useful to link back to the main source material for these types of stories. You MUST remember that you are NOT allowed to make up or use links that were not provided as input.\n\n12. Source Requirement: You must only use URLs found within the provided text designated as \"Current Segment Story Context\" or \"Additional Current Segment Source Materials\". Do not search elsewhere or use external knowledge. Accuracy Requirement: The URL included in your output must be a perfect, character-for-character copy of the URL found in the source. It must be reproduced verbatim. Prohibition: You are strictly forbidden from creating, guessing, modifying, shortening, or completing URLs. If a URL is incomplete or looks incorrect in the provided context, copy it exactly as it is. Rationale: Users will click this URL; therefore, it must precisely match the provided source url to potentially function as intended. Handling Absence: If you cannot find any URL within the specified source sections, you *MUST* omit inserting an link and output plain text instead.\n\n---\n## Newsletter Context\n\n- Newsletter Subject Line: {{ $node[\"set_selected_stories\"].json.subject_line }}\n- Newsletter Pre-Header Text: {{ $node[\"set_selected_stories\"].json.pre_header_text }}\n\n### Current Segment Story Context\n\nTitle: {{ $node[\"set_current_segment\"].json.current_story.title }}\nSummary:  {{ $node[\"set_current_segment\"].json.current_story.summary }}\n\n{{ $node[\"aggregate_segment_text_content\"].json.content_item.join(\"\\n\\n\") }}\n\n### Additional Current Segment Source Materials\n\n{{\n  $('aggregate_segment_external_source_content').isExecuted\n    ? $node[\"aggregate_segment_external_source_content\"].json.data.map(item => {\n      let result = \"\";\n      result += `<${item.metadata.url}>\\n`;\n      result += \"---\\n\";\n      result += `url: ${item.metadata.url}\\n`;\n      result += \"---\\n\";\n      result += item?.markdown;\n      result += `</${item.metadata.url}>\\n`;\n\n      return result;\n    }).join(\"/n/n\")\n    : \"N/A\"\n}}\n\n",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an expert AI copywriter tasked with creating **engaging** newsletter segments that **resonate** with a **tech-savvy audience**. Your goal is to deliver concise, \"Axios-like\" and \"The Rundown-like\" summary sections of **AI developments** and other interesting news."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        10000,
+        4060
+      ],
+      "id": "0db9beed-4932-4791-aa9f-33845387c893",
+      "name": "write_segment_content",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e37da3c8-902a-406d-a5c7-195a9b8c32e7",
+              "name": "current_story",
+              "value": "={{ $json }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        7020,
+        4040
+      ],
+      "id": "5c0f8254-e05d-4c8a-897f-7a835803d049",
+      "name": "set_current_segment"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "144dbdda-e76e-452c-b1a1-6bbbcba2a477",
+              "name": "story_sections",
+              "value": "={{ $json.story_sections.join(\"\\n\\n---\\n\") }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        10920,
+        3560
+      ],
+      "id": "70f4cc7b-3480-4ae3-bae1-ea745aebf651",
+      "name": "set_combined_sections_content"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "story_sections"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        10700,
+        3560
+      ],
+      "id": "b6eaf60c-4799-4a77-8a54-4a04ecb95abe",
+      "name": "aggregate_story_sections"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        9240,
+        5500
+      ],
+      "id": "aaca5b25-2599-488f-98b0-df3f00916313",
+      "name": "gemini-2.5-pro",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "bT5USFNKuVo4WTKE",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserAutofixing",
+      "typeVersion": 1,
+      "position": [
+        10080,
+        4320
+      ],
+      "id": "5b19d18e-a887-4db0-86fd-b62a719932fd",
+      "name": "story_segment_auto_parser"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"chainOfThought\": {\n      \"type\": \"string\",\n      \"description\": \"Write your sequential reasoning to write this section for the AI Tools newsletter and determine what content to write, what formatting to use, what links to include to external sources, and other content decisions to make while following the provided guidelines. Please expand on the decisions you are making on each link you choose to insert. You MUST list out each of the sources you evaluated when writing this newsletter content along with the reasoning for using it as a reference or not. You MUST also share your reasoning for each link/hyperlink that you decide to place in this newsletter content along with how it meets the linking requirements.\"\n    },\n    \"newsletter_section_content\": {\n      \"type\": \"string\",\n      \"description\": \"The main content of the newsletter section formatted as markdown.\"\n    }\n  },\n  \"required\": [\n    \"chainOfThought\",\n    \"newsletter_section_content\"\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        10160,
+        4520
+      ],
+      "id": "260da005-fdd5-49ce-88aa-1df5ce988ede",
+      "name": "story_segment_output_parser"
+    },
+    {
+      "parameters": {
+        "content": "## Write Intro Section\n",
+        "height": 1040,
+        "width": 460
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        6140,
+        4720
+      ],
+      "typeVersion": 1,
+      "id": "43cf720d-fd05-4039-9b88-c2e742763956",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=# Prompt for Generating Newsletter Intro Section\n\n## Role:\n\nYou are an expert STT and TTS AI Newsletter Writer, skilled at crafting engaging and informative introductory sections that precisely match a specific style and format.\n\n## Goal:\n\nGenerate an introductory section for our STT and TTS AI email newsletter, \"The Recap,\" based on the provided inputs. The generated intro must strictly adhere to the format, style, length, and tone demonstrated in the examples below.\n\nToday's date for the newsletter is *{{ new Date(new Date($('form_trigger').item.json.Date).getTime() + (12 * 60 * 60 * 1000)).format(\"yyyy-MM-dd\", \"America/Chicago\") }}*.\n\n## Input Provided:\n\nYou will receive the following information for each newsletter edition:\n1.  **Subject Line:** The subject line of the email.\n2.  **Pre-header Text:** The pre-header text (preview text) of the email.\n3.  **Newsletter Content:** The full text content of the body of the newsletter.\n\n## Constraints & Instructions:\n\n1.  **Format Mimicry:** Replicate the exact structure of the examples:\n    *   Greeting: Start *precisely* with \"Good morning, STT and TTS AI enthusiasts.\" - Instead of just printing \"STT and TTS AI enthusiast\" you should output an expersion that is surrounding by double handlebars/mustache characters `{` to open and `}` to close it. The inside of the handlebars should be `first_name | STT and TTS AI enthusiast` so the value is dynamic. Please also make sure this entire greeting is formated as bold in markdown.\n    *   Paragraph 1: Introduce the most prominent news story or theme from the provided `Newsletter Content`. This should be concise (typically 2-3 sentences). In this Paragraph, you MUST AVOID repeating the exact same sentence structure that the first story / top story uses. It will appear strange to our readers if you use the exact same sentence or extremely similar sentences in both this intro and the content already written for the first story / top story. Avoid flowerly language here, this should be simple to read and make make the reader want to continue forward.\n    *   Paragraph 2: Briefly elaborate on the main topic, pose a key question about its implications, or highlight its significance (typically 2-3 sentences). Avoid duplicating or repeating information across these paragraphs. Avoid flowerly language here, this should be simple to read.\n    *   Transition Phrase: Use the *exact* phrase \"In today’s STT and TTS AI recap:\" (Note: Use \"recap\", **not** \"rundown\"). This transition phrase MUST be bolded text in markdown format.\n    *   Bulleted List: Create a bulleted list (using `-` for each point) summarizing the main topics covered in the `Newsletter Content`. Derive these items directly from the provided content.\n2.  **Style & Tone:** Match the style and tone of the examples: informative, engaging, slightly speculative/analytical (often posing a question in the second paragraph), concise, and enthusiastic, targeted towards an audience interested in STT and TTS AI developments.\n3.  **Length:** Ensure the overall length of the generated introduction section is very similar to the examples provided.\n4.  **Content Derivation:** Base the content of the two introductory paragraphs and the bulleted list *solely* on the information present in the provided `Newsletter Content`. Identify the most significant news item for the opening paragraphs.\n5.  **Keyword:** Use the word \"recap\" in the transition phrase before the bulleted list, as the newsletter is named \"The Recap\".\n\n## Examples of Desired Output Format, Style, Length, and Tone:\n\n**(Note: The examples below use \"rundown\" but your output MUST use \"recap\" in the transition phrase)**\n\n**Example 1 (Illustrative - use \"recap\" in your output):**\n\nGood morning, STT and TTS AI enthusiasts. OpenSTT and TTS AI has “a lot of good stuff” lined up this week, according to Sam Altman—and its first release is a step back…in name only.\n\nA newly launched GPT-4.1 (?) family features million-token context windows, improved coding abilities, and significantly lower prices across the board — potentially laying a new foundation for the fast-approaching era of agentic STT and TTS AI development.\n\nIn today’s STT and TTS AI rundown:\n\n- OpenSTT and TTS AI’s dev-focused GPT-4.1 family\n- ByteDance’s efficient Seaweed video STT and TTS AI\n- Create conversational branches to explore ideas\n- Google’s STT and TTS AI to decode dolphin speech\n\n---\n\n**Example 2 (Illustrative - use \"recap\" in your output):**\n\nGood morning, STT and TTS AI enthusiasts. OpenSTT and TTS AI’s future may stretch beyond frontier models…to a social network riding ChatGPT’s wave of success.\n\nThe move could unlock much-needed real-time data for Sam Altman’s STT and TTS AI ambitions, but the question is: could OpenSTT and TTS AI match the scale, engagement, stickiness, and broader cultural pull of X or Meta’s platforms?\n\nIn today’s STT and TTS AI rundown:\n\n- OpenSTT and TTS AI reportedly building social network\n- Kling STT and TTS AI drops new video and image models\n- Build a personal data analyst with n8n automation\n- STT and TTS AI models play detective in Ace Attorney\n\n---\n\n**Example 3 (Illustrative - use \"recap\" in your output):**\n\nGood morning, STT and TTS AI enthusiasts. Meta’s hotly-anticipated Llama 4 family is here — with a surprise weekend release debuting new open-weights models with massive context windows and benchmark-beating performances.\n\nWith a 2T “Behemoth” still in training and claims of outperforming GPT-4.5, is this release a true next-gen step forward? Or will user experience tell a different story?\n\nIn today’s STT and TTS AI rundown:\n\n- Meta launches Llama 4 model family\n- Copilot’s new personalization upgrades\n- Unlock the power of STT and TTS AI across your apps\n- ‘STT and TTS AI 2027’ forecasts existential risks of ASI\n\n---\n\n**Example 4 (Illustrative - use \"recap\" in your output):**\n\nGood morning, STT and TTS AI enthusiasts. STT and TTS AI-generated video has always faced major limitations in length and consistency, but new research may have just unlocked a major leap in storytelling capabilities.\n\nWith researchers using a new method and a dataset of Tom and Jerry cartoons to create minute-long, coherent generations, the days of short, disconnected STT and TTS AI video clips may finally be numbered.\n\nIn today’s STT and TTS AI rundown:\n\n- NVIDIA and Stanford’s one-minute STT and TTS AI cartoons\n- Amazon’s new voice model, video upgrade\n- Create eye-catching thumbnails with GPT-4o\n- Murati’s Thinking Machines adds ex-OpenSTT and TTS AI talent\n\n---\n### Word and Phrase Blacklist\n\nAvoid using these words and phrases in your output:\n\n- Smarts\n- Game changing\n- game-changing\n- next-level\n- Revolutionize\n- sophisticated\n- enhanced\n\n---\n\n## Your Task:\n\nBased on the `Subject Line`, `Pre-header Text`, and `Newsletter Content` I provide, generate the introductory section for \"The Recap\" newsletter, following all the instructions and mimicking the examples precisely, ensuring you use \"In today’s STT and TTS AI recap:\".\n\n### Subject Line\n{{ $('set_selected_stories').item.json.subject_line }}\n\n### Pre-header Text\n{{ $('set_selected_stories').item.json.pre_header_text }}\n\n### Newsletter Content\n{{ $('set_combined_sections_content').item.json.story_sections }}",
+        "hasOutputParser": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        6180,
+        5060
+      ],
+      "id": "60dfb829-3bff-4a09-822b-99bc2c457e29",
+      "name": "write_intro"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"chainOfThought\": {\n      \"type\": \"string\",\n      \"description\": \"Write your sequential reasoning to write this intro section for the AI Tools newsletter and determine what content to write, what formatting to use, and any other thoughts made during the process of writing.\"\n    },\n    \"newsletter_intro_section_content\": {\n      \"type\": \"string\",\n      \"description\": \"The 'intro' newsletter section content formatted as markdown.\"\n    }\n  },\n  \"required\": [\n    \"chainOfThought\",\n    \"newsletter_intro_section_content\"\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        6240,
+        5480
+      ],
+      "id": "10cb1502-bf47-4daa-903f-39a4b6b624eb",
+      "name": "intro_parser"
+    },
+    {
+      "parameters": {
+        "content": "## Write \"The Shortlist\" Section\n",
+        "height": 1040,
+        "width": 460,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        6620,
+        4720
+      ],
+      "typeVersion": 1,
+      "id": "f3551c47-eadb-446a-ae6b-6d2e6b767ab7",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"chainOfThought\": {\n      \"type\": \"string\",\n      \"description\": \"Write your sequential reasoning to write this 'other top stories stories' section for the AI Tools newsletter and determine what content to write, what formatting to use, what links to copy/paste over from the provided stories, and any other thoughts made during the process of writing. You MUST list out each of the sources you evaluated when writing this newsletter section along with the reasoning for using it as a reference or not. You MUST also share your reasoning for each link/hyperlink that you decide to place in this newsletter content along with how it meets the provided linking requirements. Your are not allowed to fabricate for make-up a link. Links MUST be extracted directly from the provided source materials.\"\n    },\n    \"newsletter_other_top_stories_section_content\": {\n      \"type\": \"string\",\n      \"description\": \"The 'other top stories' newsletter section content formatted as markdown. You must include your analysis of which link to include and validation of it being copied directly from source materials. You MUST directly extract this link from the provided source materials. You are REQUIRED to pick out at least 3 (three) stories to be included here. The URL included in your output for any given story **MUST** be a perfect, 100% **character-for-character copy** of the URL as it appears in the `List of Potential Other AI Stories` section. It must be reproduced *exactly* as written in the source, including case sensitivity, punctuation, and any apparent errors or incompleteness.\"\n    }\n  },\n  \"required\": [\n    \"chainOfThought\",\n    \"newsletter_other_top_stories_section_content\"\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        6800,
+        5480
+      ],
+      "id": "102a8346-869c-48d0-a0f4-12bab437cb97",
+      "name": "other_top_stories_parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## Role:\n\nYou are an expert STT and TTS AI Newsletter Writer, specializing in crafting concise, engaging, and informative summaries of the latest STT and TTS AI news for a tech-savvy audience. You are writing a specific section for the newsletter \"The Recap\".\n\n## Context:\n\nWe are creating the \"Other Top STT and TTS AI Stories\" section for our email newsletter, \"The Recap\". This section should highlight interesting and relevant STT and TTS AI news items that were *not* covered in the main segments of the newsletter. The goal is to provide readers with a quick overview of other significant developments in the STT and TTS AI space. The stories you pick MUST be related to STT and TTS AI.\n\nToday's date for the newsletter is *{{ new Date(new Date($('form_trigger').item.json.Date).getTime() + (12 * 60 * 60 * 1000)).format(\"yyyy-MM-dd\", \"America/Chicago\") }}*.\n\n## Input Data:\n\nYou will be provided with the following information:\n\n1.  **Newsletter Subject Line:** \"\"{{ $('set_selected_stories').item.json.subject_line }}\"\n2.  **Main Stories Already Covered (Do NOT repeat these topics or include them in your output)**\n3. **The Full Text Content of Our Last Newsletter Edition** (Do NOT repeat stories or include duplicates that have already been covered in \"The Shortlist\" section of the previous edition)\n4.  **List of Potential Other STT and TTS AI Stories (Analyze these and evaluate these in order to determine the best stories)**\n5. **List of Potential Other STT and TTS AI Stories from Tweets / X Posts (Analyze these and evaluate these in order to determine the best stories)**\n\n## Task:\n\nYour task is to analyze the provided list of STT and TTS AI news stories, select the most relevant and interesting stories for a tech and STT and TTS AI enthusiast audience (typically 3-5 stories, use your judgment. It is truly your choice to pick the number of stories), ensuring they do *not* overlap with the stories already in the newsletter, and then write a short summary for each selected story in the specified format and style. You are not allowed to make up or guess a link to include for a story. You MUST have a link that you can copy and paste into your output for it to be valid story to include. If there is not a valid link to include, you MUST omit this story from your output. You must include a minimum of at least 3 (three) stories in your output. \n\n## Formatting and Style Requirements:\n*   **Output Format:** Generate the output in Markdown.\n*   **Story Structure:**\n    *   The **first word** of each story summary *must* be **bolded**.\n    *   The **second word** *must* be a **verb** and formatted as a Markdown **link** (`[verb](URL)`). If a verb does not work here for the story, you should skip/omit this story.\n    *   The **URL** used in the link *must* be the **exact** URL provided for that story in the list of stories / story context. You must copy and paste this value for your output — there can be no changes to this url. This is critical.\n    *   The rest of the sentence should be a concise summary of the story's key takeaway.\n    *    Your output must be in  markdown format.\n*   **Style:**\n    *   Mimic the writing style of \"The Rundown\" and the provided examples below. The tone should be concise, informative, slightly informal, and engaging for STT and TTS AI/tech professionals and enthusiasts.\n    *   Each story summary *must* be its own paragraph. **Do NOT use bullet points or numbered lists.**\n*   **Selection Criteria:** Choose stories that are significant, interesting, or offer a unique perspective within the STT and TTS AI landscape. Avoid minor updates unless particularly noteworthy. Prioritize variety if possible. Make sure you DO NOT repeat stories in your selection or output duplicates. You MUST use specifics when referencing stories, instead of saying a generic term like \"STT and TTS AI\", you must pick a story that references specific companies, entities, models, or some other specific term.\n\n## Examples of Desired Output Format and Style (Use these as your guide):\n\n**NVIDIA** [released](<URL_placeholder>) Nemotron-Ultra, a 253B parameter open-source reasoning model that surpasses DeepSeek R1 and Llama 4 Behemoth across key benchmarks.\n\n**OpenAI** [published](<URL_placeholder>) its EU Economic Blueprint, proposing a €1B STT and TTS AI accelerator fund and aiming to train 100M Europeans in STT and TTS AI skills by 2030.\n\n**Deep Cogito** [emerged](<URL_placeholder>) from stealth with Cogito v1 Preview, a family of open-source models that it claims beats the best available open models of the same size.\n\n**Google** [rolled out](<URL_placeholder>) its Deep Research feature on Gemini 2.5 Pro, claiming superior research report generation over rivals and adding new audio overview capabilities.\n\n## Link and Hyperlinking Requirements\n\nIt is critical that you follow these requirements when inserting links into your output. Read through this carefully, reflect on it for 25 minutes, and double check your work to ensure you follow these requirements correctly.\n\n1.  **Mandatory Verified Deep Links:** All hyperlinks MUST point to the *exact*, specific page, document, or section directly supporting the assertion being made. Before including *any* link:\n    * **Verify:** Confirm the destination directly and explicitly supports the specific information it's linked to.\n    * **Prioritize:** Use primary or the most authoritative sources available.\n    * **Deep Link:** Absolutely NO linking to generic homepages or main site sections (e.g., link to the specific *project page* or *announcement*, not just the company's top-level domain). An example of linking to a generic homepage would be `https://openai.com/`. Make sure you DO NOT DO THIS.\n    * **Omit if Uncertain:** If the precise, credible, and directly supporting URL cannot be confidently identified and verified, DO NOT include a link for that piece of information.\n\n2.  **Leverage Provided Source Materials:** Actively consult the `Current Segment Story Context` and `Additional Current Segment Source Materials` sections (if provided) to identify, verify, and select the most appropriate and accurate hyperlinks based on the available information.\n\n3. Verify link destinations - Before suggesting a link in your response, confirm the URL directly relates to the exact topic, product, or claim being discussed. You MUST NOT link to a web page that doesn't exist or a web page that would result in a HTTP 404 error when a user clicks on it. If you include a link that goes to a web page that does not exist or results in an error, it will result in us completely losing the trust of our readers. You are not allowed to make any mistakes here or insert links that are to web pages that don't exist on the internet. Think through this requirement carefully and deeply.\n\n7. Multiple sources and links can be found below in the list of other stories to evaluate and consider. Please think deeply and review this context in order to place the best links. You must read all additional source materials and think on the best links to reference for 30 minutes before you decide to add them in.\n\n8. Prefer linking to credible sources and avoid linking to unknown websites.\n\n9. You MUST ENSURE that the links you are including and inserting are exactly the same urls copied from the provided source urls. You may not change or modify these urls because the url is required to work. When including a URL it should be copied and pasted in. NOT URL MODIFICATION IS ALLOWED. Before inserting a link, you must load this URL from the internet to ensure it is still valid and can be seen when people click on it. YOU MUST INSERT AND PROVIDE CORRECT HYPERLINKS.\n\n10. Strict URL Handling Requirements:\n\n*   **Source Constraint:** You **MUST** exclusively use URLs found *verbatim* within the provided text section explicitly labeled `\"List of Potential Other STT and TTS AI Stories\"`. Absolutely **NO** external searching or use of prior knowledge is permitted to find, verify, or complete URLs.\n*   **Accuracy Mandate - Verbatim Copying:** The URL included in your output for any given story **MUST** be a perfect, 100% **character-for-character copy** of the URL as it appears in the `\"List of Potential Other STT and TTS AI Stories\"` section. It must be reproduced *exactly* as written in the source, including case sensitivity, punctuation, and any apparent errors or incompleteness.\n    *   **Verification Step:** Before outputting any URL, perform a mental (or procedural) **direct comparison** between the URL in the source text and the URL you plan to output. Ensure every single character matches perfectly.\n*   **Strict Prohibition on Modification:** You are explicitly **FORBIDDEN** from:\n    *   Creating, generating, or inventing URLs.\n    *   Guessing or completing partial URLs found in the source.\n    *   Modifying URLs in *any* way (e.g., correcting perceived typos, adding/removing `http://` or `https://` unless present in the source, changing case, URL encoding/decoding, shortening).\n    *   Using URLs that merely *resemble* source URLs but are not exact matches.\n    *   **Rule:** If a URL appears incomplete, broken, misspelled, or otherwise incorrect within the source text, you **MUST** copy it precisely in that flawed state. **Do NOT attempt to \"fix\" it.**\n*   **Handling Missing URLs:** If you examine the `\"List of Potential Other STT and TTS AI Stories\"` section and cannot find *any* URL explicitly associated with a potential story mentioned therein, you **MUST OMIT that specific story entirely** from your output. Do not mention the story if its corresponding URL is absent in the designated source section.\n*   **Critical Importance & Consequence:** Failure to adhere strictly to these URL rules, especially the verbatim copy requirement, is unacceptable. An incorrect or modified URL will fail. **Treat every URL extraction as a critical data integrity task requiring maximum precision.** Double-check your work meticulously against the source before finalizing the output.\n\n## Output Generation:\n\nBased on the inputs provided (Subject Line, The content of stories already covered, list of all STT and TTS AI stories), generate the \"Other Top STT and TTS AI Stories\" section following all instructions precisely. Ensure the selected stories are distinct from the main covered topics and formatted correctly.\n\n## Subject Line (Input #1)\n\n{{ $('set_selected_stories').item.json.subject_line }}\n\n## Main Stories Already Covered (Input #2)\n\n{{ $('set_combined_sections_content').item.json.story_sections }}\n\n## Last/Previous Edition of Our Newsletter (Input #3)\n\n```\n{{ $('form_trigger').item.json[\"Previous Newsletter Content\"] }}\n```\n\n## List of Potential Other STT and TTS AI Stories (Input #4)\n\n{{ $('combine_markdown_content').item.json.content_result }}\n\n",
+        "hasOutputParser": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        6720,
+        5080
+      ],
+      "id": "3cc9d867-d290-4aa9-8fe1-bafd040035e6",
+      "name": "write_other_top_stories"
+    },
+    {
+      "parameters": {
+        "content": "## Format Full Newsletter",
+        "height": 1040,
+        "width": 1300,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        7100,
+        4720
+      ],
+      "typeVersion": 1,
+      "id": "6c0a991e-a5e4-4d86-bb80-d9e6fbdae7a7",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cba28e4d-4a34-4765-b456-16c81479da9e",
+              "name": "full_newsletter_content",
+              "value": "=# {{ $('set_selected_stories').item.json.subject_line }}\n\n{{ $('set_selected_stories').item.json.pre_header_text }}\n\n---\n{{ $('write_intro').item.json.output.newsletter_intro_section_content }}\n\n---\n{{ $('set_combined_sections_content').item.json.story_sections }}\n\n---\n## The Shortlist\n\n{{ $('write_other_top_stories').item.json.output.newsletter_other_top_stories_section_content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        7240,
+        5080
+      ],
+      "id": "25c04744-8f80-4f8f-beec-b7c5618ef36d",
+      "name": "set_full_newsletter"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserAutofixing",
+      "typeVersion": 1,
+      "position": [
+        6160,
+        5340
+      ],
+      "id": "8d5b3e63-ed3a-49cf-b67d-db08c1faebbd",
+      "name": "intro_auto_parser"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "00d2afe0-255b-45c0-b501-6844c615915d",
+              "name": "content_result",
+              "value": "={{ $('aggregate_markdown_content').item.json.data.map(item => item.content).join(\"\\n\\n\") }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        8540,
+        1860
+      ],
+      "id": "91d6565a-1c20-4daa-9464-2afcec70d8f6",
+      "name": "combine_markdown_content"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        8260,
+        1860
+      ],
+      "id": "ef233b5f-ffc7-4775-8edf-f545b82587d0",
+      "name": "aggregate_markdown_content"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0d20cf16-c938-4ad4-a343-d32ab8070067",
+              "name": "content",
+              "value": "=<{{ $('filter_only_markdown').item.json.Key }}>\n---\nidentifier: {{ $('filter_only_markdown').item.json.Key }}\nfriendlyType: {{ $('download_markdown_object').item.json.type }}\nsourceName: {{ $('download_markdown_object').item.json['source-name'] }}\nauthors: {{ $('download_markdown_object').item.json.authors }}\nexternalSourceUrls: {{ $('download_markdown_object').item.json['external-source-urls'] }}\n---\n\n{{ $('get_markdown_file_content').item.json.data }}\n</{{ $('filter_only_markdown').item.json.Key }}>",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        7980,
+        1860
+      ],
+      "id": "57f43bd3-9328-4478-86c8-ed5299847fef",
+      "name": "prepare_markdown_content"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        7700,
+        1860
+      ],
+      "id": "337a5e8c-6023-40f1-a16d-d0bf0bd0ee6c",
+      "name": "get_markdown_file_content"
+    },
+    {
+      "parameters": {
+        "bucketName": "mydataingestion",
+        "fileKey": "={{ $('filter_only_markdown').item.json.Key }}"
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        7420,
+        1860
+      ],
+      "id": "fb10f0fc-9df0-4e8d-8768-076fa759ff2a",
+      "name": "download_markdown_object",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "s3": {
+          "id": "VLtGHFPRKEhOkWHv",
+          "name": "wasabi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "bucket",
+        "operation": "search",
+        "bucketName": "mydataingestion",
+        "limit": 500,
+        "additionalFields": {
+          "prefix": "={{ $json.Date }}/"
+        }
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        6220,
+        1860
+      ],
+      "id": "34462ea4-9750-4ee4-80cb-d94ce3975275",
+      "name": "search_markdown_objects",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "s3": {
+          "id": "VLtGHFPRKEhOkWHv",
+          "name": "wasabi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1571fbbb-d836-4df7-8c15-09faddf0db49",
+              "name": "=subject_line",
+              "value": "={{ $node[\"set_current_subject_line\"].json.current_subject_line.subject_line }}",
+              "type": "string"
+            },
+            {
+              "id": "f0af3af9-7e19-4589-861b-67456d6321b1",
+              "name": "pre_header_text",
+              "value": "={{ $node[\"set_current_subject_line\"].json.current_subject_line.pre_header_text }}",
+              "type": "string"
+            },
+            {
+              "id": "7ace9fce-eb1c-40d1-938e-c4a5331e2987",
+              "name": "=top_selected_stories",
+              "value": "={{ $node[\"set_current_stories\"].json.current_stories.top_selected_stories }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        6160,
+        3920
+      ],
+      "id": "e1355520-5b1a-41b8-a8e9-11a61e7a5948",
+      "name": "set_selected_stories"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserAutofixing",
+      "typeVersion": 1,
+      "position": [
+        6740,
+        5300
+      ],
+      "id": "8417f038-d57d-4924-9566-5b53cb8b034d",
+      "name": "other_top_stories_auto_parser"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserAutofixing",
+      "typeVersion": 1,
+      "position": [
+        6460,
+        2860
+      ],
+      "id": "fc2f4410-2993-4ab6-baee-26fc5f403992",
+      "name": "top_stories_auto_parser"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6a40f15b-56ac-4b0a-89cb-f5f31cdcdd69",
+              "name": "=subject_line_examples",
+              "value": "=- AI finds cancers with 99% accuracy\n- Claude (finally) searches the web\n- OpenAI's regulatory power play\n- Ilya's secret ASI roadmap\n- Apple's AI emergency\n- DeepMind's AI math genius\n- Mistral's speedy new assistant\n- OpenAI goes nuclear\n- AI's tutoring breakthrough\n- OpenAI's $500B Stargate Project\n- Meta's Manhattan-sized AI play\n- OpenAI's first AI agent arrives\n- OpenAI's o3 and o4-mini arrive\n- Chipmaking rivals join forces\n- Amazon is joining the reasoning race\n- Claude enters the reasoning era\n- Figure's home robot breakthrough\n- OpenAI’s ex-CTO launches rival lab\n- OpenAI's new GPT-5 roadmap\n- AI workforce coming: Anthropic's one-year prediction\n- The state of AI in 2025 (according to Stanford)\n- OpenAI's dev-focused GPT-4.1\n- Google's new AI video generator rivals Sora\n- China declares AI independence",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        8260,
+        2600
+      ],
+      "id": "ab0cb7f1-9729-4403-971d-b08d3ef0abc7",
+      "name": "subject_examples"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0cf59ec5-e726-4327-9bbb-ebc222040626",
+              "name": "current_stories",
+              "value": "={{ $json.output }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        7280,
+        2580
+      ],
+      "id": "24f9f9e5-f42e-4279-be74-8a66d255576f",
+      "name": "set_current_stories"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## Task\n\n**Objective:** Extract unique, direct image URLs from the provided contexts.\n\n**Inputs:**\n*   `Initial Sources Image Urls Context`\n*   `External Sources Image Urls Context`\n\n**Instructions:**\n1.  **Parse:** Process the XML content from both provided contexts.\n2.  **Extract:** Identify and collect all URLs found within the XML data.\n3.  **Filter:** Scrutinize the extracted URLs. Retain *only* those that appear to be direct links to image files (e.g., URLs ending in `.jpg`, `.png`, `.gif`, `.webp`, `.svg`, or otherwise structured as direct image resources).\n4.  **Exclude:** Explicitly remove any URLs that likely point to web pages (e.g., HTML documents, articles) rather than the image resource itself.\n5.  **Deduplicate:** Ensure the final list contains each unique image URL only once.\n6.  **Output:** Provide the final, unique list of valid image URLs.\n\n\n## Initial Sources Image Urls Context\n\nYou should look for the `imageUrls` value to see a comma-separated list of image urls for each provided story.\n\n{{ $node[\"aggregate_segment_text_content\"].json.content_item.join(\"\\n\\n\") }}\n\n\n## External Sources Image Urls Context\n\nYou should look inside the JSON for a list of image urls for each external source provided.\n\n{{\n  $('aggregate_segment_external_source_content').isExecuted && $node[\"aggregate_segment_external_source_content\"].json.data.length > 0\n    ? $node[\"aggregate_segment_external_source_content\"].json.data.map(item => {\n      let result = \"\";\n      result += `<${item.metadata.url}>\\n`;\n      result += \"---\\n\";\n      result += `Url: ${item.metadata.url}\\n`;\n      result += \"---\\n\";\n      result += JSON.stringify(item?.json?.main_content_image_urls, null, 2);\n      result += `</${item.metadata.url}>\\n`;\n\n      return result;\n    }).join(\"/n/n\")\n    : \"N/A\"\n}}",
+        "hasOutputParser": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        10340,
+        4060
+      ],
+      "id": "7d3ff8f5-7d86-445b-9b24-f9c16173c127",
+      "name": "extract_image_urls",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\t\"type\": \"object\",\n\t\"properties\": {\n      \"chainOfThought\": {\n        \"type\": \"string\",\n        \"description\": \"Write your sequential reasoning to identify and extract the image urls from the provided sources.\"\n    },\n      \"image_urls\": {\n        \"type\": \"array\",\n        \"items\": {\n          \"type\": \"string\",\n          \"description\": \"Image url extracted directly from the provided context. You should only output a url here if you are certain it is form an image.\"\n        },\n        \"description\": \"List of extracted image urls from the provided sources and context.\"\n      }\n\t},\n    \"required\": [\n      \"chainOfThought\",\n      \"image_urls\"\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        10480,
+        4520
+      ],
+      "id": "be7bb1b3-7ea2-4037-ac17-98639b4e45d7",
+      "name": "extract_image_urls_parser"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5ae7c9b5-c82b-45c8-aff8-8a59e6028c49",
+              "name": "story_segment",
+              "value": "={{ $node[\"write_segment_content\"].json.output }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        10920,
+        4060
+      ],
+      "id": "8615906a-ab82-4e4c-af78-19a110d44b5b",
+      "name": "set_story_segment"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('set_subject_line_prompt').item.json.write_subject_line_prompt }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are also an expert at crafting subject lines for newsletter emails that leads to great open rates and keeps our readers interested."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        8660,
+        2600
+      ],
+      "id": "53ff84dc-2eaf-4d2d-8271-4b66de80dbc6",
+      "name": "write_subject_line",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6a40f15b-56ac-4b0a-89cb-f5f31cdcdd69",
+              "name": "=write_subject_line_prompt",
+              "value": "=Role:\n\nYou are an expert AI Newsletter Writer, skilled at crafting engaging and informative introductory sections that precisely match a specific style and format, with a special focus on Speech-to-Text & AI Transcription technologies.\n\nGoal:\n\nGenerate an introductory section for our AI email newsletter, \"The Frostoy,\" focused on Speech-to-Text (STT), transcription models, voice interfaces, and audio-driven AI applications, based on the provided inputs. The generated intro must strictly adhere to the format, style, length, and tone demonstrated in the examples below.\n\nToday's date for the newsletter is *{{ new Date(new Date($('form_trigger').item.json.Date).getTime() + (12 * 60 * 60 * 1000)).format(\"yyyy-MM-dd\", \"America/Chicago\") }}*.\n\n<top_newsletter_stories>\n```json\n{{ JSON.stringify($node[\"set_current_stories\"].json.current_stories.top_selected_stories, null, 2) }}\n```\n</top_newsletter_stories>\n\n## Important Guidelines\n\nInput Provided:\n\nYou will receive the following information for each newsletter edition:\n\nSubject Line: The subject line of the email.\n\nPre-header Text: The pre-header text (preview text) of the email.\n\nNewsletter Content: The full text content of the body of the newsletter.\n\nConstraints & Instructions:\n\nFormat Mimicry: Replicate the exact structure of the examples:\n\nGreeting: Start precisely with \"Good morning.\" — Format this greeting as bold in markdown. Ensure the entire greeting uses handlebars/mustache syntax for dynamic substitution.\n\nParagraph 1: Introduce the most prominent story or theme related to Speech-to-Text or audio AI from the Newsletter Content. Be concise (2-3 sentences). Do not repeat sentence structure from the top story — this should be an original summary.\n\nParagraph 2: Briefly elaborate on the topic’s significance, pose a question, or outline key implications (2-3 sentences). Avoid repeating ideas. Keep the tone accessible and engaging.\n\nTransition Phrase: Use the exact phrase \"In today’s STT recap:\" — this must be bolded using markdown.\n\nBulleted List: List key stories from the Newsletter Content, using - bullets. All stories must relate to STT, transcription, voice interfaces, or audio-based AI applications.\n\nStyle & Tone: Match this style:\n\nInformative\n\nAnalytical (often asking speculative questions)\n\nConcise\n\nWritten for professionals interested in STT, AI speech research, and voice UX trends\n\nLength: Match the examples: ~2 short paragraphs + 4 bullets. No fluff.\n\nContent Derivation: Do not invent facts. Derive summaries and headlines only from Newsletter Content. Use the most important story in the opening paragraph.\n\nKeyword: Always use the word \"recap\" in the transition phrase (not \"rundown\").\n\n<great_subject_line_examples>\n{{ $('subject_examples').item.json.subject_line_examples }}\n</great_subject_line_examples>\n\n---\n# Web Content Context (The top stories were sourced from this information)\n\nReference this web content by cross-referencing its `identifier` from the selected stories to explore more context around the selected stories. You may only reference the story content that has a matching `identifer` that you cross-referenced.\n\n{{ $('combine_markdown_content').item.json.content_result }}\n\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        8460,
+        2600
+      ],
+      "id": "271943fb-4229-42b0-bbf8-c5865214364a",
+      "name": "set_subject_line_prompt"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"subject_line_reasoning\": {\n      \"type\": \"string\",\n      \"description\": \"A detailed chain of thought explaining why you wrote the subject line the way you did. This will be shared in slack so please format this in slack's format. Avoid regular bullets and use numbered lists. The more detail of your reasoning, the better. IF feedback was provided in the context of editing the subject line, include how you considered that feedback in your changes.\"\n    },\n    \"subject_line\": {\n      \"type\": \"string\",\n      \"description\": \"A single compelling subject line for the newsletter email that follows the given subject line guidelines.\"\n    },\n    \"additional_subject_lines\": {\n      \"type\": \"array\",\n      \"description\": \"A list of 5-8 additional subject lines that were considered as top options for the selected subject line but were ultimately not selected.\",\n      \"items\": {\n        \"type\": \"string\",\n        \"description\": \"An additional subject line that was considered as a top option but was ultimately not selected.\"\n      }\n    },\n    \"pre_header_text_reasoning\": {\n      \"type\": \"string\",\n      \"description\": \"A detailed chain of thought explaining why you wrote the pre-header text the way you did. This will be shared in slack so please format this in slack's format. Avoid regular bullets and use numbered lists. The more detail of your reasoning, the better. IF feedback was provided in the context of editing the pre header text, include how you considered that feedback in your changes.\"\n    },\n    \"pre_header_text\": {\n      \"type\": \"string\",\n      \"description\": \"A short line of text to appear in email previews that follows the given pre header guidelines.\"\n    }\n  },\n  \"required\": [\n    \"subject_line_reasoning\",\n    \"subject_line\",\n    \"additional_subject_lines\",\n    \"pre_header_text_reasoning\",\n    \"pre_header_text\"\n  ]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        8820,
+        2860
+      ],
+      "id": "f2dbec4c-7d8a-4690-b444-a8227fc88cf5",
+      "name": "subject_line_parser"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0cf59ec5-e726-4327-9bbb-ebc222040626",
+              "name": "current_subject_line",
+              "value": "={{ $json.output }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        9240,
+        2600
+      ],
+      "id": "d4dfa78a-495e-413c-b7b7-17e4b667e0e2",
+      "name": "set_current_subject_line"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "full_newsletter_content",
+        "options": {
+          "fileName": "={{ new Date($('form_trigger').item.json.Date).format(\"yyyy-MM-dd\") + \".md\" }}"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        7640,
+        5080
+      ],
+      "id": "af697f0d-a686-4bdf-b136-7f89c5e50d3e",
+      "name": "create_newsletter_file"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5d952674-8f5c-4236-a5d4-30179f0206f5",
+              "name": "select_top_stories_prompt",
+              "value": "=Objective:\n\nCurate the most relevant and impactful news stories focused on Speech-to-Text (STT), voice recognition, transcription technology, and audio-based AI for today's newsletter edition.\n\n✅ Required Output\n\nYour final output must contain:\n\ntop_selected_stories (array of objects, maximum of 4)\n\nEach object should contain:\n\ntitle (string): Catchy title like an Axios headline.\n\nsummary (string): 1-sentence summary of the story.\n\nreason_for_selecting (string): Why you picked this story for our STT-focused audience.\n\nidentifiers (array): Copy-paste the exact identifier values from each story’s metadata.\n\nexternal_source_links (array): URLs found in the story body or metadata that link to original or supporting content. No .pdfs, images, or shopping links.\n\ntop_selected_stories_chain_of_thought (string):\n\nThis is a detailed breakdown of your entire evaluation process, including:\n\nEvery story you reviewed\n\nIts associated identifier\n\nA decision: selected or excluded\n\nYour reasoning (especially for edge cases or popular content that was left out)\n\nExplicit disqualification of duplicate stories or those excluded due to overlap or lack of depth\n\nℹ️ What to Look For:\n\nInclude Stories That...\n\nHighlight new STT models or transcription tools from major players\n\nFeature real-world applications of speech recognition (call centers, Zoom, accessibility)\n\nContain research breakthroughs in multilingual STT, streaming latency, diarization, etc.\n\nReport significant usage trends in voice-to-text tech\n\nShowcase integrations of transcription AI in popular platforms (Zoom, Slack, customer service, etc.)\n\nAvoid Stories That...\n\nAre AI-adjacent but not STT-related (e.g., vision models, AI art)\n\nAre overly political or safety-focused\n\nPromote training courses or general AI evangelism\n\nHave little technical or market relevance (e.g., joke or meme-based content)\n\nDuplicate coverage from previous editions (check: Previous Newsletter Content)\n\n📅 Time-Sensitive Filter:\n\nOnly include content published on:\n\n{{ new Date(new Date($('form_trigger').item.json.Date).getTime() + (12 * 60 * 60 * 1000)).format(\"yyyy-MM-dd\", \"America/Chicago\") }}\n\nInput Fields:\n\nPrevious Edition Content\n\n{{ $('form_trigger').item.json[\"Previous Newsletter Content\"] }}\n\nNew Web + Tweet Content To Analyze\n\n{{ $('combine_markdown_content').item.json.content_result }}\n\nChain-of-Thought (Critical for Output Quality)\n\nYour top_selected_stories_chain_of_thought must be detailed. For each story:\n\nInclude its identifier\n\nClarify if it was selected or excluded\n\nJustify your reasoning (usefulness, virality, overlap, novelty, source credibility)\n\nExamples of Good Top Story Types for STT:\n\n\"Whisper achieves sub-200ms latency in real-time streaming mode\"\n\n\"Otter.ai launches Zoom integration with real-time transcription\"\n\n\"New multilingual STT dataset released by Mozilla\"\n\n\"Startup raises $30M to build real-time transcription for legal industry\"\n\n\"Voice AI startup passes 1B minutes transcribed milestone\"\n\nPlease follow this structure exactly. Accuracy of identifiers, external_source_links, and format is critical.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        6160,
+        2580
+      ],
+      "id": "d5bb4801-d6e5-4854-8cc0-bbc8a8df8190",
+      "name": "stories_prompt"
+    },
+    {
+      "parameters": {
+        "content": "## Write Subject Line",
+        "height": 1300,
+        "width": 3060,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        8060,
+        2080
+      ],
+      "typeVersion": 1,
+      "id": "42ea132b-0390-491e-ba25-0f23b1ae87d4",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserAutofixing",
+      "typeVersion": 1,
+      "position": [
+        10400,
+        4320
+      ],
+      "id": "2a1c6b95-a4db-44e7-a44f-5976d5644b69",
+      "name": "image_urls_auto_parser"
+    },
+    {
+      "parameters": {
+        "model": "mistralai/mistral-small-24b-instruct-2501:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        9060,
+        5500
+      ],
+      "id": "6de2462f-0763-43f2-990d-d9b4f6904b4b",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "k1idbWO06UMQstWV",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "Metadata_md",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "keyValue": "\"2025-06-24/case-study-wistia.taaft2025-06-26T00:00:00.000-04:00/Case Study: Wistia .md\""
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        6820,
+        1860
+      ],
+      "id": "ad08078e-4218-4223-b1be-a30fe7ed63f9",
+      "name": "getmetadata",
+      "alwaysOutputData": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "ORbevNX9C46izsEg",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "Metadata_md",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "keyValue": "=\"{{ $json[\"current_story.identifiers\"] }}\""
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        7480,
+        4040
+      ],
+      "id": "55a19acf-31dd-438b-bc35-6ec7bdb6bf78",
+      "name": "getmetadata1",
+      "alwaysOutputData": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "ORbevNX9C46izsEg",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "=abhyudya2004@hotmail.com",
+        "subject": "Your News Update is Here",
+        "message": "=Please Find attached your newsletter. ",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        8000,
+        5080
+      ],
+      "id": "e290e270-2ddb-4f6f-b29c-0ac611c2f48a",
+      "name": "Gmail",
+      "webhookId": "b20555c4-c1ff-48a7-823b-fff134f41156",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "BqDeWilMYrwK1vcS",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "form_trigger": {
+      "main": [
+        [
+          {
+            "node": "search_markdown_objects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filter_only_markdown": {
+      "main": [
+        [
+          {
+            "node": "getmetadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "exclude_newsletters": {
+      "main": [
+        [
+          {
+            "node": "download_markdown_object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "top_stories_parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "top_stories_auto_parser",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "pick_top_stories": {
+      "main": [
+        [
+          {
+            "node": "set_current_stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split_stories": {
+      "main": [
+        [
+          {
+            "node": "iterate_stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "iterate_stories": {
+      "main": [
+        [
+          {
+            "node": "set_story_segments",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "set_current_segment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split_content_ids": {
+      "main": [
+        [
+          {
+            "node": "getmetadata1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_external_urls": {
+      "main": [
+        [
+          {
+            "node": "set_segment_external_source_links",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "write_segment_content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "download_segment_content": {
+      "main": [
+        [
+          {
+            "node": "get_segment_content_text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_segment_content_text": {
+      "main": [
+        [
+          {
+            "node": "prepare_segment_content_item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare_segment_content_item": {
+      "main": [
+        [
+          {
+            "node": "aggregate_segment_text_content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "aggregate_segment_text_content": {
+      "main": [
+        [
+          {
+            "node": "check_external_urls",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_segment_external_source_links": {
+      "main": [
+        [
+          {
+            "node": "split_segment_external_source_urls",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split_segment_external_source_urls": {
+      "main": [
+        [
+          {
+            "node": "scrape_segment_external_source_url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "scrape_segment_external_source_url": {
+      "main": [
+        [
+          {
+            "node": "filter_segment_external_source_errors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "aggregate_segment_external_source_content": {
+      "main": [
+        [
+          {
+            "node": "write_segment_content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filter_segment_external_source_errors": {
+      "main": [
+        [
+          {
+            "node": "aggregate_segment_external_source_content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "write_segment_content": {
+      "main": [
+        [
+          {
+            "node": "extract_image_urls",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_story_segments": {
+      "main": [
+        [
+          {
+            "node": "aggregate_story_sections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_current_segment": {
+      "main": [
+        [
+          {
+            "node": "split_content_ids",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "aggregate_story_sections": {
+      "main": [
+        [
+          {
+            "node": "set_combined_sections_content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gemini-2.5-pro": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "write_segment_content",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "write_intro",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "write_other_top_stories",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "pick_top_stories",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "extract_image_urls",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "write_subject_line",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "story_segment_auto_parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "write_segment_content",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "story_segment_output_parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "story_segment_auto_parser",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_combined_sections_content": {
+      "main": [
+        [
+          {
+            "node": "write_intro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "intro_parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "intro_auto_parser",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "write_intro": {
+      "main": [
+        [
+          {
+            "node": "write_other_top_stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "other_top_stories_parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "other_top_stories_auto_parser",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "write_other_top_stories": {
+      "main": [
+        [
+          {
+            "node": "set_full_newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "intro_auto_parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "write_intro",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "combine_markdown_content": {
+      "main": [
+        [
+          {
+            "node": "stories_prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "aggregate_markdown_content": {
+      "main": [
+        [
+          {
+            "node": "combine_markdown_content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare_markdown_content": {
+      "main": [
+        [
+          {
+            "node": "aggregate_markdown_content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_markdown_file_content": {
+      "main": [
+        [
+          {
+            "node": "prepare_markdown_content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "download_markdown_object": {
+      "main": [
+        [
+          {
+            "node": "get_markdown_file_content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_markdown_objects": {
+      "main": [
+        [
+          {
+            "node": "filter_only_markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_selected_stories": {
+      "main": [
+        [
+          {
+            "node": "split_stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "other_top_stories_auto_parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "write_other_top_stories",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "top_stories_auto_parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "pick_top_stories",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "subject_examples": {
+      "main": [
+        [
+          {
+            "node": "set_subject_line_prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_current_stories": {
+      "main": [
+        [
+          {
+            "node": "subject_examples",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract_image_urls": {
+      "main": [
+        [
+          {
+            "node": "set_story_segment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract_image_urls_parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "image_urls_auto_parser",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_story_segment": {
+      "main": [
+        [
+          {
+            "node": "iterate_stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_subject_line_prompt": {
+      "main": [
+        [
+          {
+            "node": "write_subject_line",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "subject_line_parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "write_subject_line",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "write_subject_line": {
+      "main": [
+        [
+          {
+            "node": "set_current_subject_line",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_current_subject_line": {
+      "main": [
+        [
+          {
+            "node": "set_selected_stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_full_newsletter": {
+      "main": [
+        [
+          {
+            "node": "create_newsletter_file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_newsletter_file": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "stories_prompt": {
+      "main": [
+        [
+          {
+            "node": "pick_top_stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "image_urls_auto_parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "extract_image_urls",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "other_top_stories_auto_parser",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "intro_auto_parser",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "top_stories_auto_parser",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "image_urls_auto_parser",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "story_segment_auto_parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getmetadata": {
+      "main": [
+        [
+          {
+            "node": "exclude_newsletters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getmetadata1": {
+      "main": [
+        [
+          {
+            "node": "download_segment_content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8384190d-28a1-4a2d-8073-b933ff7a17d4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "564740c7a8fa600566c2586f44608f5217ad77f91092b8da80ebcc13ea02f725"
+  },
+  "id": "si9dZASBGJEsmfSF",
+  "tags": [
+    {
+      "createdAt": "2025-06-26T04:21:10.987Z",
+      "updatedAt": "2025-06-26T04:21:10.987Z",
+      "id": "OmRKSs8jpxtYJnvl",
+      "name": "Content"
+    },
+    {
+      "createdAt": "2025-06-26T04:21:10.997Z",
+      "updatedAt": "2025-06-26T04:21:10.997Z",
+      "id": "s04zK0bmO4e6f9hj",
+      "name": "Agent"
+    }
+  ]
+}
